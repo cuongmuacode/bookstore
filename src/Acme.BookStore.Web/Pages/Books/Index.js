@@ -1,6 +1,9 @@
 ﻿$(function () {
     var l = abp.localization.getResource('BookStore');
 
+    var createModal = new abp.ModalManager(abp.appPath + "Books/CreateModal");
+    var updateModal = new abp.ModalManager(abp.appPath + "Books/EditModal");
+
     var dataTable = $('#BooksTable').DataTable(
         abp.libs.datatables.normalizeConfiguration({
             serverSide: true,
@@ -10,6 +13,33 @@
             scrollX: true,
             ajax: abp.libs.datatables.createAjax(acme.bookStore.books.book.getList),
             columnDefs: [
+                {
+                    title: l('Actions'),
+                    rowAction: {
+                        items: [
+                            {
+                                text: l('Edit'),
+                                action: function (data) {
+                                    updateModal.open({ id: data.record.id });
+                                }
+                            },
+                            {
+                                text: l('Delete'),
+                                confirmMessage: function (data) {
+                                    return l('BookDeletionConfirmationMessage', data.record.name);
+                                },
+                                action: function (data) {
+                                    acme.bookStore.books.book
+                                        .delete(data.record.id)
+                                        .then(function () {
+                                            abp.notify.info(l('SuccessfullyDeleted'));
+                                            dataTable.ajax.reload();
+                                        });
+                                }
+                            }
+                        ]
+                    }
+                },
                 {
                     title: l('Name'),
                     data: "name"
@@ -49,4 +79,18 @@
             ]
         })
     );
+
+    createModal.onResult(function () {
+        dataTable.ajax.reload();
+    });
+
+    updateModal.onResult(function () {
+        dataTable.ajax.reload();
+    });
+
+    $('#NewBookButton').click(function (e) {
+        e.preventDefault();
+        createModal.open();
+    });
 });
+
